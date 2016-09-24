@@ -3,6 +3,17 @@ module.exports = function(grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
     concat: {
+      options: {
+        separator: ';'
+      },
+      lib:{ 
+        src:[ 'public/lib/*.js' ],
+        dest:'public/lib.js'
+      },
+      client: {
+        src: [ 'public/client/*.js' ],//파일 합쳐서
+        dest: 'public/client.js'//보낸다. 
+      } 
     },
 
     mochaTest: {
@@ -10,7 +21,7 @@ module.exports = function(grunt) {
         options: {
           reporter: 'spec'
         },
-        src: ['test/**/*.js']
+        src: ['test/*.js']
       }
     },
 
@@ -21,22 +32,35 @@ module.exports = function(grunt) {
     },
 
     uglify: {
+      lib:{ 
+        src:[ 'public/lib.js' ],
+        dest:'public/dist/lib.min.js'
+      },
+      client: {
+        src: [ 'public/client.js' ],//파일 합쳐서
+        dest: 'public/dist/client.min.js'//보낸다. 
+      } 
     },
 
     eslint: {
       target: [
         // Add list of files to lint here
+        'public/client/*.js', 'public/lib/*.js'
       ]
     },
 
     cssmin: {
+      dist: {
+        src: ['public/style.css'],//줄여서
+        dest: 'public/dist/style.min.css'//보낸다. 
+      }
     },
 
     watch: {
-      scripts: {
+      scripts: {  
         files: [
-          'public/client/**/*.js',
-          'public/lib/**/*.js',
+          'public/client/*.js',
+          'public/lib/*.js',
         ],
         tasks: [
           'concat',
@@ -44,18 +68,26 @@ module.exports = function(grunt) {
         ]
       },
       css: {
-        files: 'public/*.css',
+        files: 'public/style.css',
         tasks: ['cssmin']
       }
     },
 
     shell: {
       prodServer: {
+        command:
+          'git push live master',
+        option:{
+          callback:function(err,stdout, stderr){
+            if(err) console.log(err);
+            else console.log(stdout);
+          }
+        }
       }
     },
   });
 
-  grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-contrib-uglify');//플러그인들.. 
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-cssmin');
@@ -64,8 +96,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-nodemon');
 
-  grunt.registerTask('server-dev', function (target) {
-    // Running nodejs in a different process and displaying output on the main console
+  grunt.registerTask('server-dev', function (target) {  // Running nodejs & displaying output on the main console
     var nodemon = grunt.util.spawn({
       cmd: 'grunt',
       grunt: true,
@@ -77,13 +108,12 @@ module.exports = function(grunt) {
     grunt.task.run([ 'watch' ]);
   });
 
-
-  grunt.registerTask('upload', function(n) {
-    if (grunt.option('prod')) {
-      // add your production server task here
-    }
-    grunt.task.run([ 'server-dev' ]);
-  });
+  // grunt.registerTask('upload', function(n) { //중복
+  //   if (grunt.option('prod')) {
+  //     // add your production server task here
+  //   }
+  //   grunt.task.run([ 'server-dev' ]);
+  // });
 
   ////////////////////////////////////////////////////
   // Main grunt tasks
@@ -94,19 +124,19 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('build', [
+    'concat', 'cssmin', 'uglify', 'eslint'
   ]);
 
   grunt.registerTask('upload', function(n) {
-    if (grunt.option('prod')) {
-      // add your production server task here
+    if (grunt.option('prod')) {           // add your production server task here
+      grunt.task.run([ 'shell' ]);
     } else {
       grunt.task.run([ 'server-dev' ]);
     }
   });
 
-  grunt.registerTask('deploy', [
-    // add your deploy tasks here
+  grunt.registerTask('deploy', [          // add your deploy tasks here
+     'shell','pkg','nodemon'
   ]);
-
 
 };
